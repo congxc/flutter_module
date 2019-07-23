@@ -4,8 +4,6 @@ Future<T> showDialog<T>({
   @required
       BuildContext context,
   bool barrierDismissible = true,
-  double width,
-  double height,
   Offset offset,
   @Deprecated(
       'Instead of using the "child" argument, return the child from a closure '
@@ -19,8 +17,6 @@ Future<T> showDialog<T>({
   final ThemeData theme = Theme.of(context, shadowThemeOnly: false);
   return showGeneralDialog(
     context: context,
-    width: width,
-    height: height,
     offset: offset,
     pageBuilder: (BuildContext buildContext, Animation<double> animation,
         Animation<double> secondaryAnimation) {
@@ -58,8 +54,6 @@ Widget _buildMaterialDialogTransitions(
 Future<T> showGeneralDialog<T>({
   @required BuildContext context,
   @required RoutePageBuilder pageBuilder,
-  double width,
-  double height,
   Offset offset,
   bool barrierDismissible,
   String barrierLabel,
@@ -70,8 +64,6 @@ Future<T> showGeneralDialog<T>({
   assert(pageBuilder != null);
   assert(!barrierDismissible || barrierLabel != null);
   return Navigator.of(context, rootNavigator: true).push<T>(_DialogRoute<T>(
-    width: width,
-    height: height,
     offset: offset,
     pageBuilder: pageBuilder,
     barrierDismissible: barrierDismissible,
@@ -85,8 +77,6 @@ Future<T> showGeneralDialog<T>({
 class _DialogRoute<T> extends PopupRoute<T> {
   _DialogRoute({
     @required RoutePageBuilder pageBuilder,
-    this.width,
-    this.height,
     this.offset,
     bool barrierDismissible = true,
     String barrierLabel,
@@ -104,8 +94,6 @@ class _DialogRoute<T> extends PopupRoute<T> {
         super(settings: settings);
 
   final Offset offset;
-  final double width;
-  final double height;
 
   final RoutePageBuilder _pageBuilder;
 
@@ -137,25 +125,39 @@ class _DialogRoute<T> extends PopupRoute<T> {
         explicitChildNodes: true,
       );
     } else {
-      return MediaQuery.removePadding(
-        context: context,
-        removeTop: true,
-        removeBottom: true,
-        removeLeft: true,
-        removeRight: true,
-        child: Builder(
-          builder: (BuildContext context) {
-            return CustomSingleChildLayout(
-              delegate: _OffsetRouteLayout(
-                offset,
-                width,
-                height,
-              ),
-              child: _pageBuilder(context, animation, secondaryAnimation),
-            );
-          },
-        ),
+      return Stack(
+        children: <Widget>[
+          Positioned.directional(
+            start: offset.dx,
+            top: offset.dy,
+            textDirection: TextDirection.ltr,
+            child: _pageBuilder(
+              context,
+              animation,
+              secondaryAnimation,
+            ),
+          )
+        ],
       );
+//      return MediaQuery.removePadding(
+//        context: context,
+//        removeTop: true,
+//        removeBottom: true,
+//        removeLeft: true,
+//        removeRight: true,
+//        child: Builder(
+//          builder: (BuildContext context) {
+//            return CustomSingleChildLayout(
+//              delegate: _OffsetRouteLayout(
+//                offset,
+//                width,
+//                height,
+//              ),
+//              child: _pageBuilder(context, animation, secondaryAnimation),
+//            );
+//          },
+//        ),
+//      );
     }
   }
 
@@ -178,7 +180,7 @@ class _OffsetRouteLayout extends SingleChildLayoutDelegate {
   final Offset offset;
   final double width;
   final double height;
-  _OffsetRouteLayout(this.offset, this.width,this.height);
+  _OffsetRouteLayout(this.offset, this.width, this.height);
 
   @override
   bool shouldRelayout(_OffsetRouteLayout oldDelegate) {
@@ -200,9 +202,9 @@ class _OffsetRouteLayout extends SingleChildLayoutDelegate {
 //    double y  = offset.dy - (ScreenUtil.screenHeightDp - height)/2.0 ;
     print("width = $width, heigt = $height");
     print("Size =  $size");
-    double x  = width/2.0 - (size.width/2.0 - offset.dx);
-    double y  = offset.dy - (size.height - height)/2.0 ;
-    var reslut  = Offset(x,y);
+    double x = width / 2.0 - (size.width / 2.0 - offset.dx);
+    double y = offset.dy - (size.height - height) / 2.0;
+    var reslut = Offset(x, y);
     print("reslut = $reslut");
     return reslut;
   }

@@ -5,7 +5,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'localization/appLocalizations_deleget.dart';
 import 'page/home_page.dart';
 import 'res/style/style.dart';
-import 'package:flutter_module/common/utils/flutter_screenutils.dart';
 void main(){
   runApp(MyApp());
   SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft,DeviceOrientation.landscapeRight]);
@@ -17,7 +16,7 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    ScreenUtil(width: 1920,height: 1080);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       localizationsDelegates: [

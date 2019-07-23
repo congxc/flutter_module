@@ -21,6 +21,8 @@ class _HomePageState extends State<HomePage> {
   TextEditingController _peopleController = TextEditingController();
   bool _btnEnable = false;
   GlobalKey _dateGlobalKey = GlobalKey();
+  DateTime _startTime;
+  DateTime _endTime;
 
   @override
   void initState() {
@@ -28,9 +30,30 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _destinationController.addListener(() {
       setState(() {
-        _btnEnable = _destinationController.value.text.isNotEmpty;
+        _btnEnable = _destinationController.value.text.isNotEmpty &&
+            _startTime != null &&
+            _endTime != null;
       });
     });
+    _dateController.addListener(() {
+      setState(() {
+        _btnEnable = _destinationController.value.text.isNotEmpty &&
+            _startTime != null &&
+            _endTime != null;
+      });
+    });
+  }
+
+  void displayDate() {
+    MaterialLocalizations localizations = MaterialLocalizations.of(context);
+    String dateDisplay = "";
+    if (_startTime != null) {
+      dateDisplay = localizations.formatFullDate(_startTime);
+    }
+    if (_endTime != null) {
+      dateDisplay = dateDisplay + "-" + localizations.formatFullDate(_endTime);
+    }
+    _dateController.text = dateDisplay;
   }
 
   void exitApp() {
@@ -190,30 +213,42 @@ class _HomePageState extends State<HomePage> {
     RenderBox dateBox = _dateGlobalKey.currentContext.findRenderObject();
     Size dateBoxSize = dateBox.size;
     Offset dateBoxOffset = dateBox.localToGlobal(Offset(0, 0));
-    print("dateBoxOffset = $dateBoxOffset");
+    //print("dateBoxOffset = $dateBoxOffset");
     Offset offset = Offset(
         dateBoxOffset.dx,
         dateBoxOffset.dy +
             dateBoxSize.height +
             ScreenUtil.instance.setHeight(20));
     DateTime toDay = DateTime.now();
-    DateTime firstDay = toDay.subtract(Duration(days: 1));
-    DateTime lastDate = toDay.add(Duration(days: 30));
+    DateTime firstDay = toDay.subtract(Duration(days: 120));
+    DateTime lastDate = toDay.add(Duration(days: 130));
+    int firstDayOfWeekIndex = -1;
+    if (Localizations.localeOf(context).languageCode == "zh") {
+      firstDayOfWeekIndex = 1; //第一列为周一
+    }
     DateTime dateTime = await picker.showDatePicker(
         context: context,
         offset: offset,
         width: ScreenUtil.instance.setWidth(1280),
-        height: ScreenUtil.instance.setHeight(476), //590
-        initialDate: toDay,
+        supportRange: true,
+//        height: ScreenUtil.instance.setHeight(476), //590
+        firstDayOfWeekIndex: firstDayOfWeekIndex,
+//        initialDate: toDay,
+        startDate: _startTime,
+        endDate: _endTime,
         firstDate: firstDay,
         lastDate: lastDate,
         showBottomButton: false,
         onTapFirst: (DateTime firstTime) {
           print("fistTime = $firstTime");
+          _startTime = firstTime;
+          displayDate();
         },
         onTapSecond: (DateTime secondTime) {
           print("secondTime = $secondTime");
           print("secondTime = $secondTime");
+          _endTime = secondTime;
+          displayDate();
         },
         onConfirm: () {
           print("onConfirm");
