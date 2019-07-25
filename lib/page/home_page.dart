@@ -1,13 +1,18 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_module/common/bean/destination.dart';
 import 'package:flutter_module/common/utils/common_utils.dart';
 import 'package:flutter_module/common/utils/flutter_screenutils.dart';
 import 'package:flutter_module/res/style/style.dart';
 import 'package:flutter_module/widget/clear_text_field.dart';
 import 'package:flutter_module/widget/date_picker.dart' as picker;
+import 'package:flutter_module/widget/destination_dialog.dart';
 import 'package:flutter_module/widget/people_picker.dart';
+import 'package:flutter_module/common/utils/date_format.dart';
+import 'package:flutter_module/common/http.dart';
 
 class HomePage extends StatefulWidget {
   static const sName = "home_page";
@@ -21,42 +26,64 @@ class _HomePageState extends State<HomePage> {
   TextEditingController _dateController = TextEditingController();
   TextEditingController _peopleController = TextEditingController();
   bool _btnEnable = false;
+  GlobalKey _destinationGlobalKey = GlobalKey();
   GlobalKey _dateGlobalKey = GlobalKey();
   GlobalKey _peopleGlobalKey = GlobalKey();
   DateTime _startTime;
   DateTime _endTime;
   People _people;
+  List<Destination> _destinationList;
+  Destination _destination;
+  Timer _timer;
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     _destinationController.addListener(() {
-      setState(() {
-        _btnEnable = _destinationController.value.text.isNotEmpty &&
-            _startTime != null &&
-            _endTime != null &&
-            _peopleController.value.text.isNotEmpty &&
-            (!_peopleController.value.text.contains("\_"));
-      });
+      updateEnable();
+      String text = _destinationController.value.text;
+      if (text.isNotEmpty && text.length >= 2) {
+        startRequestDestination(text);
+      }
     });
     _dateController.addListener(() {
-      setState(() {
-        _btnEnable = _destinationController.value.text.isNotEmpty &&
-            _startTime != null &&
-            _endTime != null &&
-            _peopleController.value.text.isNotEmpty &&
-            (!_peopleController.value.text.contains("\_"));
-      });
+      updateEnable();
     });
     _peopleController.addListener(() {
+      updateEnable();
+    });
+  }
+
+  void updateEnable() {
+    bool btnEnable = _destinationController.value.text.isNotEmpty &&
+        _startTime != null &&
+        _endTime != null &&
+        _peopleController.value.text.isNotEmpty &&
+        (!_peopleController.value.text.contains("\_"));
+    if (_btnEnable != btnEnable) {
       setState(() {
-        _btnEnable = _destinationController.value.text.isNotEmpty &&
-            _startTime != null &&
-            _endTime != null &&
-            _peopleController.value.text.isNotEmpty &&
-            (!_peopleController.value.text.contains("\_"));
+        _btnEnable = btnEnable;
       });
+    }
+  }
+
+  void startRequestDestination(String text) async {
+    if (_destination != null &&
+        _destinationController.value.text.isNotEmpty &&
+        _destinationController.value.text.toLowerCase() ==
+            _destination.name.toLowerCase()) {
+      return;
+    }
+    _timer?.cancel();
+    _timer = new Timer(Duration(milliseconds: 1000), () async {
+      List<Destination> list = await requestDestination(text);
+      print("list = $list");
+      if (list.isNotEmpty) {
+        _destination = list.first;
+        _destinationList = list;
+        showDestinationListDialog();
+      }
     });
   }
 
@@ -188,6 +215,10 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         ClearTextField(
+          onTap: () {
+            showDestinationListDialog();
+          },
+          key: _destinationGlobalKey,
           controller: _destinationController,
           prefixIcon: Icons.my_location,
           height: ScreenUtil.instance.setHeight(110),
@@ -287,12 +318,24 @@ class _HomePageState extends State<HomePage> {
         lastDate: lastDate,
         showBottomButton: false,
         onTapFirst: (DateTime firstTime) {
-          print("fistTime = $firstTime");
+          print("fistTime = $firstTime,${formatDate(firstTime, [
+            yyyy,
+            "-",
+            mm,
+            "-",
+            dd
+          ])}");
           _startTime = firstTime;
           displayDate();
         },
         onTapSecond: (DateTime secondTime) {
-          print("secondTime = $secondTime");
+          print("secondTime = $secondTime,${formatDate(secondTime, [
+            yyyy,
+            "-",
+            mm,
+            "-",
+            dd
+          ])}");
           _endTime = secondTime;
           displayDate();
         },
@@ -313,5 +356,22 @@ class _HomePageState extends State<HomePage> {
         });
     _people = people;
     displayPeople();
+  }
+
+  void showDestinationListDialog() async {
+    if (_destinationList == null || _destinationList.isEmpty) {
+      return;
+    }
+    Destination destination = await showDestinationDialog(
+      context: context,
+      destination: _destination,
+      data: _destinationList,
+      width: ScreenUtil.instance.setWidth(1280),
+      offset: getOffset(_destinationGlobalKey),
+    );
+    if (destination != null) {
+      _destination = destination;
+      _destinationController.text = _destination.name;
+    }
   }
 }
