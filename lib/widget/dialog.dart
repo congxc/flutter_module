@@ -139,25 +139,6 @@ class _DialogRoute<T> extends PopupRoute<T> {
           )
         ],
       );
-//      return MediaQuery.removePadding(
-//        context: context,
-//        removeTop: true,
-//        removeBottom: true,
-//        removeLeft: true,
-//        removeRight: true,
-//        child: Builder(
-//          builder: (BuildContext context) {
-//            return CustomSingleChildLayout(
-//              delegate: _OffsetRouteLayout(
-//                offset,
-//                width,
-//                height,
-//              ),
-//              child: _pageBuilder(context, animation, secondaryAnimation),
-//            );
-//          },
-//        ),
-//      );
     }
   }
 

@@ -26,4 +26,12 @@ abstract class Strings{
 
   String hint_input_people;
 
+  //item
+  String adults;
+
+  String child;
+
+  String children;
+
+  String age;
 }

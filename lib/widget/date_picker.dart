@@ -23,7 +23,147 @@ const int _kMaxDayPickerRowCount = 6; // A 31 day month that starts on Saturday.
 const double _kMaxDayPickerHeight =
     _kDayPickerRowHeight * (_kMaxDayPickerRowCount + 2);
 
-// Shows the selected date in large font and toggles between year and day mode
+class _DatePickerHeader extends StatelessWidget {
+  const _DatePickerHeader({
+    Key key,
+    @required this.selectedDate,
+    @required this.mode,
+    @required this.onModeChanged,
+    @required this.orientation,
+  })  : assert(selectedDate != null),
+        assert(mode != null),
+        assert(orientation != null),
+        super(key: key);
+
+  final DateTime selectedDate;
+  final DatePickerMode mode;
+  final ValueChanged<DatePickerMode> onModeChanged;
+  final Orientation orientation;
+
+  void _handleChangeMode(DatePickerMode value) {
+    if (value != mode) onModeChanged(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final MaterialLocalizations localizations =
+        MaterialLocalizations.of(context);
+    final ThemeData themeData = Theme.of(context);
+    final TextTheme headerTextTheme = themeData.primaryTextTheme;
+    Color dayColor;
+    Color yearColor;
+    switch (themeData.primaryColorBrightness) {
+      case Brightness.light:
+        dayColor = mode == DatePickerMode.day ? Colors.black87 : Colors.black54;
+        yearColor =
+            mode == DatePickerMode.year ? Colors.black87 : Colors.black54;
+        break;
+      case Brightness.dark:
+        dayColor = mode == DatePickerMode.day ? Colors.white : Colors.white70;
+        yearColor = mode == DatePickerMode.year ? Colors.white : Colors.white70;
+        break;
+    }
+    final TextStyle dayStyle =
+        headerTextTheme.display1.copyWith(color: dayColor);
+    final TextStyle yearStyle =
+        headerTextTheme.subhead.copyWith(color: yearColor);
+
+    Color backgroundColor;
+    switch (themeData.brightness) {
+      case Brightness.light:
+        backgroundColor = themeData.primaryColor;
+        break;
+      case Brightness.dark:
+        backgroundColor = themeData.backgroundColor;
+        break;
+    }
+
+    EdgeInsets padding;
+    MainAxisAlignment mainAxisAlignment;
+    switch (orientation) {
+      case Orientation.portrait:
+        padding = const EdgeInsets.all(16.0);
+        mainAxisAlignment = MainAxisAlignment.center;
+        break;
+      case Orientation.landscape:
+        padding = const EdgeInsets.all(8.0);
+        mainAxisAlignment = MainAxisAlignment.start;
+        break;
+    }
+
+    final Widget yearButton = IgnorePointer(
+      ignoring: mode != DatePickerMode.day,
+      ignoringSemantics: false,
+      child: _DateHeaderButton(
+        color: backgroundColor,
+        onTap: Feedback.wrapForTap(
+            () => _handleChangeMode(DatePickerMode.year), context),
+        child: Semantics(
+          selected: mode == DatePickerMode.year,
+          child: Text(localizations.formatYear(selectedDate), style: yearStyle),
+        ),
+      ),
+    );
+
+    final Widget dayButton = IgnorePointer(
+      ignoring: mode == DatePickerMode.day,
+      ignoringSemantics: false,
+      child: _DateHeaderButton(
+        color: backgroundColor,
+        onTap: Feedback.wrapForTap(
+            () => _handleChangeMode(DatePickerMode.day), context),
+        child: Semantics(
+          selected: mode == DatePickerMode.day,
+          child: Text(localizations.formatMediumDate(selectedDate),
+              style: dayStyle),
+        ),
+      ),
+    );
+
+    return Container(
+      padding: padding,
+      color: backgroundColor,
+      child: Column(
+        mainAxisAlignment: mainAxisAlignment,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[yearButton, dayButton],
+      ),
+    );
+  }
+}
+
+class _DateHeaderButton extends StatelessWidget {
+  const _DateHeaderButton({
+    Key key,
+    this.onTap,
+    this.color,
+    this.child,
+  }) : super(key: key);
+
+  final VoidCallback onTap;
+  final Color color;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Material(
+      type: MaterialType.button,
+      color: color,
+      child: InkWell(
+        borderRadius: kMaterialEdges[MaterialType.button],
+        highlightColor: theme.highlightColor,
+        splashColor: theme.splashColor,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
 
 class _DayPickerGridDelegate extends SliverGridDelegate {
   const _DayPickerGridDelegate();
@@ -335,7 +475,7 @@ class DayPicker extends StatelessWidget {
           itemStyle = themeData.accentTextTheme.body2;
           decoration = BoxDecoration(
 //            color: themeData.accentColor,
-            color: Color(0xFFFB2289),
+            color: _shapeColor,
             shape: BoxShape.circle,
           );
         } else if (disabled) {
@@ -1005,6 +1145,20 @@ class _DatePickerDialogState extends State<_DatePickerDialog> {
     Navigator.pop(context, _selectedDate);
   }
 
+  void _handleModeChanged(DatePickerMode mode) {
+    _vibrate();
+    setState(() {
+      _mode = mode;
+      if (_mode == DatePickerMode.day) {
+        SemanticsService.announce(
+            localizations.formatMonthYear(_selectedDate), textDirection);
+      } else {
+        SemanticsService.announce(
+            localizations.formatYear(_selectedDate), textDirection);
+      }
+    });
+  }
+
   Widget _buildPicker() {
     assert(_mode != null);
     switch (_mode) {
@@ -1054,31 +1208,39 @@ class _DatePickerDialogState extends State<_DatePickerDialog> {
         ),
       );
     }
-    final Widget dialog = Container(
-      child: AnimatedPadding(
-        padding: EdgeInsets.all(0),
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.decelerate,
-        child: MediaQuery.removeViewInsets(
-          removeLeft: true,
-          removeTop: true,
-          removeRight: true,
-          removeBottom: true,
-          context: context,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 280.0),
-              child: Material(
-                color: Theme.of(context).dialogBackgroundColor,
-                elevation: 24,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-                type: MaterialType.card,
-                child: Container(
-                  width: widget.width,
-                  constraints: BoxConstraints(
-                    maxWidth: widget.width,
-//            maxHeight: widget.height,
+    Widget dialog;
+    if (widget.width != null && widget.width != double.infinity) {
+      dialog = Material(
+        color: Theme.of(context).dialogBackgroundColor,
+        elevation: 24,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        type: MaterialType.card,
+        child: Container(
+          width: widget.width,
+          child: actions == null
+              ? picker
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Flexible(child: picker),
+                    actions,
+                  ],
+                ),
+        ),
+      );
+    } else {
+      dialog = Dialog(
+        elevation: 0,
+        backgroundColor: Color(0x010000),
+        child: OrientationBuilder(
+          builder: (BuildContext context, Orientation orientation) {
+            switch (orientation) {
+              case Orientation.portrait:
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: actions == null
                       ? picker
@@ -1090,17 +1252,39 @@ class _DatePickerDialogState extends State<_DatePickerDialog> {
                             actions,
                           ],
                         ),
-                ),
-              ),
-            ),
-          ),
+                );
+              case Orientation.landscape:
+                return Row(
+                  children: <Widget>[
+                    Flexible(child: GestureDetector(onTap: (){Navigator.of(context).pop();},)),
+                    Flexible(
+                      flex: 5,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: actions == null
+                            ? picker
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: <Widget>[
+                                  Flexible(child: picker),
+                                  actions,
+                                ],
+                              ),
+                      ),
+                    ),
+                    Flexible(child: GestureDetector(onTap: (){Navigator.of(context).pop();},)),
+                  ],
+                );
+            }
+            return null;
+          },
         ),
-      ),
-    );
-//    final Dialog dialog = Dialog(
-//      elevation: 0,
-//      child: ,
-//    );
+      );
+    }
 
     return Theme(
       data: theme.copyWith(
@@ -1124,7 +1308,6 @@ Future<DateTime> showDatePicker({
   DateTime startDate,
   DateTime endDate,
   double width,
-//  double height,
   Offset offset,
   bool showBottomButton,
   int firstDayOfWeekIndex,
@@ -1152,7 +1335,7 @@ Future<DateTime> showDatePicker({
       initialDatePickerMode != null, 'initialDatePickerMode must not be null');
   assert(context != null);
   assert(debugCheckHasMaterialLocalizations(context));
-
+  print("width = $width");
   Widget child = _DatePickerDialog(
     initialDate: initialDate,
     firstDate: firstDate,
@@ -1162,7 +1345,6 @@ Future<DateTime> showDatePicker({
     endDate: endDate,
     firstDayOfWeekIndex: firstDayOfWeekIndex,
     width: width,
-//    height: height,
     showBottomButton: showBottomButton,
     onTapFirst: onTapFirst,
     onTapSecond: onTapSecond,
@@ -1185,6 +1367,10 @@ Future<DateTime> showDatePicker({
       child: child,
     );
   }
+  if (width == null || width == double.infinity) {
+    offset = null;
+  }
+  print("offset = $offset");
   return await app_dialog.showDialog<DateTime>(
     context: context,
     offset: offset,

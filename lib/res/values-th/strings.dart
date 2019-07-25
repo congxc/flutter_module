@@ -38,4 +38,18 @@ class Strings extends BaseStrings.Strings{
   @override
   String hint_input_people = "เลือกจำนวนแขก";
 
+  //item
+
+  @override
+  String adults = "ผู้ใหญ่";
+
+  @override
+  String child = "เด็ก";
+
+  @override
+  String children = "เด็ก";
+
+  @override
+  String age = "อายุ";
+
 }

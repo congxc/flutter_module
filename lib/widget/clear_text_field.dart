@@ -5,7 +5,7 @@ import 'package:flutter_module/res/style/style.dart';
 class ClearTextField extends StatefulWidget {
   final TextEditingController controller;
   final double width;
-  final Color brackGround;
+  final Color backGround;
   final double height;
   final String hintText;
   final TextStyle hintTextStyle;
@@ -43,12 +43,13 @@ class ClearTextField extends StatefulWidget {
       this.controller,
       this.width = double.infinity,
       this.height = double.infinity,
+      this.enabled = true,
       this.supportClear = true,
       this.padding,
       this.style,
       this.hintText,
       this.hintTextStyle,
-      this.brackGround,
+      this.backGround,
       this.decoration,
       this.focusNode,
       this.keyboardType,
@@ -64,7 +65,6 @@ class ClearTextField extends StatefulWidget {
       this.onEditingComplete,
       this.onSubmitted,
       this.inputFormatters,
-      this.enabled,
       this.onTap,
       this.onTapClearIcon,
       this.prefixIcon})
@@ -110,7 +110,7 @@ class _ClearTextFieldState extends State<ClearTextField> {
       padding: widget.padding ?? EdgeInsets.all(0),
       decoration: widget.decoration ??
           BoxDecoration(
-              color: widget.brackGround ?? Colors.white,
+              color: widget.backGround ?? Colors.white,
               border: Border.all(color: Colors.white),
               borderRadius: BorderRadius.circular(10.0)),
       constraints: BoxConstraints(

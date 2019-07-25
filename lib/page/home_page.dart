@@ -7,6 +7,7 @@ import 'package:flutter_module/common/utils/flutter_screenutils.dart';
 import 'package:flutter_module/res/style/style.dart';
 import 'package:flutter_module/widget/clear_text_field.dart';
 import 'package:flutter_module/widget/date_picker.dart' as picker;
+import 'package:flutter_module/widget/people_picker.dart';
 
 class HomePage extends StatefulWidget {
   static const sName = "home_page";
@@ -21,8 +22,10 @@ class _HomePageState extends State<HomePage> {
   TextEditingController _peopleController = TextEditingController();
   bool _btnEnable = false;
   GlobalKey _dateGlobalKey = GlobalKey();
+  GlobalKey _peopleGlobalKey = GlobalKey();
   DateTime _startTime;
   DateTime _endTime;
+  People _people;
 
   @override
   void initState() {
@@ -32,14 +35,27 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _btnEnable = _destinationController.value.text.isNotEmpty &&
             _startTime != null &&
-            _endTime != null;
+            _endTime != null &&
+            _peopleController.value.text.isNotEmpty &&
+            (!_peopleController.value.text.contains("\_"));
       });
     });
     _dateController.addListener(() {
       setState(() {
         _btnEnable = _destinationController.value.text.isNotEmpty &&
             _startTime != null &&
-            _endTime != null;
+            _endTime != null &&
+            _peopleController.value.text.isNotEmpty &&
+            (!_peopleController.value.text.contains("\_"));
+      });
+    });
+    _peopleController.addListener(() {
+      setState(() {
+        _btnEnable = _destinationController.value.text.isNotEmpty &&
+            _startTime != null &&
+            _endTime != null &&
+            _peopleController.value.text.isNotEmpty &&
+            (!_peopleController.value.text.contains("\_"));
       });
     });
   }
@@ -48,12 +64,33 @@ class _HomePageState extends State<HomePage> {
     MaterialLocalizations localizations = MaterialLocalizations.of(context);
     String dateDisplay = "";
     if (_startTime != null) {
-      dateDisplay = localizations.formatFullDate(_startTime);
+      dateDisplay = localizations.formatMediumDate(_startTime);
     }
     if (_endTime != null) {
-      dateDisplay = dateDisplay + "-" + localizations.formatFullDate(_endTime);
+      dateDisplay =
+          dateDisplay + "-" + localizations.formatMediumDate(_endTime);
     }
     _dateController.text = dateDisplay;
+  }
+
+  void displayPeople() {
+    String display = "";
+    if (_people != null) {
+      display =
+          "${_people.adultCount}" + CommonUtils.getStrings(context).adults;
+      if (_people.childCount > 0) {
+        display +=
+            "${_people.childCount}" + CommonUtils.getStrings(context).children;
+      }
+      if (_people.children != null) {
+        display += _people.children
+            .toString()
+            .replaceAll("\[", "(")
+            .replaceAll("\]", ")")
+            .replaceAll("-1", "_");
+      }
+    }
+    _peopleController.text = display;
   }
 
   void exitApp() {
@@ -164,6 +201,7 @@ class _HomePageState extends State<HomePage> {
           onTap: () {
             _onTapDateItem();
           },
+          supportClear: false,
           enabled: false,
           prefixIcon: Icons.date_range,
           height: ScreenUtil.instance.setHeight(110),
@@ -172,9 +210,11 @@ class _HomePageState extends State<HomePage> {
         Padding(
             padding: EdgeInsets.only(top: ScreenUtil.instance.setHeight(20))),
         ClearTextField(
+          key: _peopleGlobalKey,
           controller: _peopleController,
-          // onTap: _onTapPeopleItem,
+          onTap: _onTapPeopleItem,
           enabled: false,
+          supportClear: false,
           prefixIcon: Icons.people,
           height: ScreenUtil.instance.setHeight(110),
           hintText: CommonUtils.getStrings(context).hint_input_people,
@@ -209,29 +249,36 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _onTapDateItem() async {
-    RenderBox dateBox = _dateGlobalKey.currentContext.findRenderObject();
+  Offset getOffset(GlobalKey globalKey) {
+    RenderBox dateBox = globalKey.currentContext.findRenderObject();
     Size dateBoxSize = dateBox.size;
     Offset dateBoxOffset = dateBox.localToGlobal(Offset(0, 0));
-    //print("dateBoxOffset = $dateBoxOffset");
     Offset offset = Offset(
         dateBoxOffset.dx,
         dateBoxOffset.dy +
             dateBoxSize.height +
             ScreenUtil.instance.setHeight(20));
+    return offset;
+  }
+
+  void _onTapDateItem() async {
+    Offset offset = getOffset(_dateGlobalKey);
     DateTime toDay = DateTime.now();
-    DateTime firstDay = toDay.subtract(Duration(days: 120));
-    DateTime lastDate = toDay.add(Duration(days: 130));
+    DateTime firstDay = toDay.subtract(Duration(days: 1));
+    DateTime lastDate = toDay.add(Duration(days: 30));
     int firstDayOfWeekIndex = -1;
     if (Localizations.localeOf(context).languageCode == "zh") {
       firstDayOfWeekIndex = 1; //第一列为周一
     }
+    double width;
+    if (MediaQuery.of(context).orientation == Orientation.landscape) {
+      width = ScreenUtil.instance.setWidth(1280);
+    }
     DateTime dateTime = await picker.showDatePicker(
         context: context,
         offset: offset,
-        width: ScreenUtil.instance.setWidth(1280),
+        width: width,
         supportRange: true,
-//        height: ScreenUtil.instance.setHeight(476), //590
         firstDayOfWeekIndex: firstDayOfWeekIndex,
 //        initialDate: toDay,
         startDate: _startTime,
@@ -246,7 +293,6 @@ class _HomePageState extends State<HomePage> {
         },
         onTapSecond: (DateTime secondTime) {
           print("secondTime = $secondTime");
-          print("secondTime = $secondTime");
           _endTime = secondTime;
           displayDate();
         },
@@ -255,6 +301,17 @@ class _HomePageState extends State<HomePage> {
         });
     print("dateTime = $dateTime");
   }
-//
-//  void _onTapPeopleItem() {}
+
+  void _onTapPeopleItem() async {
+    People people = await showPeoplePicker(
+        context: context,
+        people: _people,
+        offset: getOffset(_peopleGlobalKey),
+        width: ScreenUtil.instance.setWidth(1280),
+        onConfirm: (People people) {
+          print('people = $people');
+        });
+    _people = people;
+    displayPeople();
+  }
 }
