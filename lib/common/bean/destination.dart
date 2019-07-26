@@ -3,7 +3,7 @@ import 'package:json_annotation/json_annotation.dart';
 part 'destination.g.dart';
 
 @JsonSerializable()
-class ResponseBean {
+class DestinationResponseBean {
   @JsonKey(name: 'status_code')
   int statusCode;
 
@@ -13,14 +13,14 @@ class ResponseBean {
   @JsonKey(name: 'data')
   List<Destination> data;
 
-  ResponseBean(
+  DestinationResponseBean(
     this.statusCode,
     this.status,
     this.data,
   );
 
-  factory ResponseBean.fromJson(Map<String, dynamic> srcJson) =>
-      _$ResponseBeanFromJson(srcJson);
+  factory DestinationResponseBean.fromJson(Map<String, dynamic> srcJson) =>
+      _$DestinationResponseBeanFromJson(srcJson);
 }
 
 @JsonSerializable()

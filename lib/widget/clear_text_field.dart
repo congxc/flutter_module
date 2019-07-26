@@ -88,7 +88,8 @@ class _ClearTextFieldState extends State<ClearTextField> {
         if (widget.controller != null) {
           setState(() {
             visible =
-                focusNode.hasFocus && widget.controller.value.text.isNotEmpty;
+//                focusNode.hasFocus && widget.controller.value.text.isNotEmpty;
+           widget.controller.value.text.isNotEmpty;
           });
         }
       });
@@ -96,7 +97,8 @@ class _ClearTextFieldState extends State<ClearTextField> {
       setState(() {
         if (widget.enabled) {
           visible =
-              focusNode.hasFocus && widget.controller.value.text.isNotEmpty;
+//              focusNode.hasFocus && widget.controller.value.text.isNotEmpty;
+             widget.controller.value.text.isNotEmpty;
         } else {
           visible = widget.controller.value.text.isNotEmpty;
         }

@@ -6,8 +6,9 @@ part of 'destination.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-ResponseBean _$ResponseBeanFromJson(Map<String, dynamic> json) {
-  return ResponseBean(
+DestinationResponseBean _$DestinationResponseBeanFromJson(
+    Map<String, dynamic> json) {
+  return DestinationResponseBean(
     json['status_code'] as int,
     json['status'] as String,
     (json['data'] as List)
@@ -17,7 +18,8 @@ ResponseBean _$ResponseBeanFromJson(Map<String, dynamic> json) {
   );
 }
 
-Map<String, dynamic> _$ResponseBeanToJson(ResponseBean instance) =>
+Map<String, dynamic> _$DestinationResponseBeanToJson(
+        DestinationResponseBean instance) =>
     <String, dynamic>{
       'status_code': instance.statusCode,
       'status': instance.status,

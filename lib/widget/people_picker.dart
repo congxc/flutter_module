@@ -1,21 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_module/common/bean/people.dart';
 import 'package:flutter_module/common/utils/common_utils.dart';
 import 'package:flutter_module/widget/dialog.dart' as app_dialog;
 import 'package:flutter/rendering.dart';
-
-class People {
-  int adultCount; //成人数量
-  int childCount; //小孩数量
-  List<int> children;
-
-  People({this.adultCount, this.childCount, this.children});
-
-  @override
-  String toString() {
-    return 'People{adultCount: $adultCount, childCount: $childCount, children: $children}';
-  } //小孩年龄
-
-}
 
 const int _kRowHeight = 50;
 

@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_module/common/bean/destination.dart';
+import 'package:flutter_module/common/bean/filterbean.dart';
+import 'package:flutter_module/common/bean/people.dart';
 import 'package:flutter_module/common/utils/common_utils.dart';
 import 'package:flutter_module/common/utils/flutter_screenutils.dart';
 import 'package:flutter_module/res/style/style.dart';
@@ -13,6 +15,9 @@ import 'package:flutter_module/widget/destination_dialog.dart';
 import 'package:flutter_module/widget/people_picker.dart';
 import 'package:flutter_module/common/utils/date_format.dart';
 import 'package:flutter_module/common/http.dart';
+
+import 'base_page.dart';
+import 'hotel_list_page.dart';
 
 class HomePage extends StatefulWidget {
   static const sName = "home_page";
@@ -35,6 +40,7 @@ class _HomePageState extends State<HomePage> {
   List<Destination> _destinationList;
   Destination _destination;
   Timer _timer;
+  bool _canRequestDestination = true; //是否可以执行所搜目的地
 
   @override
   void initState() {
@@ -44,7 +50,9 @@ class _HomePageState extends State<HomePage> {
       updateEnable();
       String text = _destinationController.value.text;
       if (text.isNotEmpty && text.length >= 2) {
-        startRequestDestination(text);
+        if (_canRequestDestination) {
+          startRequestDestination(text);
+        }
       }
     });
     _dateController.addListener(() {
@@ -120,49 +128,50 @@ class _HomePageState extends State<HomePage> {
     _peopleController.text = display;
   }
 
-  void exitApp() {
-    if (Platform.isAndroid) {
-      SystemNavigator.pop();
-    } else {
-      Navigator.pop(context);
-    }
-  }
+
 
   @override
   Widget build(BuildContext context) {
     ScreenUtil.instance = ScreenUtil(width: 1920, height: 1080)..init(context);
     return Material(
-      child: Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage("static/images/bg_main.png"),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: <Widget>[
-            Scaffold(
-              backgroundColor: Colors.transparent,
-              appBar: AppBar(
-                leading: IconButton(
-                  onPressed: exitApp,
-                  padding: EdgeInsets.only(top: 15),
-                  icon: Image.asset(
-                    "static/images/icon_back.png",
-                    width: ScreenUtil.instance.setWidth(27),
-                    height: ScreenUtil.instance.setHeight(52),
-                    fit: BoxFit.scaleDown,
-                    color: Colors.white,
-                  ),
-                ),
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-              ),
-              resizeToAvoidBottomPadding: false,
+      child: GestureDetector(
+        onTap: () {
+          FocusScope.of(context).requestFocus(FocusNode()); //隐藏软键盘
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage("static/images/bg_main.png"),
+              fit: BoxFit.cover,
             ),
-            buildCenter(context)
-          ],
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: <Widget>[
+              Scaffold(
+                backgroundColor: Colors.transparent,
+                appBar: AppBar(
+                  leading: IconButton(
+                    onPressed: (){
+                      exitApp(context);
+                    },
+                    padding: EdgeInsets.only(top: 15),
+                    icon: Image.asset(
+                      "static/images/icon_back.png",
+                      width: ScreenUtil.instance.setWidth(27),
+                      height: ScreenUtil.instance.setHeight(52),
+                      fit: BoxFit.scaleDown,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                ),
+                resizeToAvoidBottomPadding: false,
+              ),
+              buildCenter(context)
+            ],
+          ),
         ),
       ),
     );
@@ -218,6 +227,10 @@ class _HomePageState extends State<HomePage> {
           onTap: () {
             showDestinationListDialog();
           },
+          onTapClearIcon: () {
+            _destination = null;
+            _destinationList = null;
+          },
           key: _destinationGlobalKey,
           controller: _destinationController,
           prefixIcon: Icons.my_location,
@@ -257,7 +270,16 @@ class _HomePageState extends State<HomePage> {
             height: ScreenUtil.instance.setHeight(110),
           ),
           child: RaisedButton(
-            onPressed: _btnEnable ? () {} : null,
+            onPressed: _btnEnable
+                ? () {
+                    FilterBean filterBean =
+                        FilterBean(_startTime, _endTime, _destination, _people);
+                    Navigator.of(context)
+                        .push(MaterialPageRoute(builder: (context) {
+                      return HotelListPage(filterBean);
+                    }));
+                  }
+                : null,
             colorBrightness: Brightness.dark,
             color: Color(AppColors.btnColor),
             disabledColor: Colors.grey,
@@ -370,8 +392,10 @@ class _HomePageState extends State<HomePage> {
       offset: getOffset(_destinationGlobalKey),
     );
     if (destination != null) {
+      _canRequestDestination = false;
       _destination = destination;
       _destinationController.text = _destination.name;
+      _canRequestDestination = true;
     }
   }
 }

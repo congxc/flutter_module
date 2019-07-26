@@ -16,6 +16,7 @@ class AppColors {
 
   static const int btnColor = 0xFFFFC914;
   static const int textColor = 0xFF464646;
+  static const int priceColor = 0xFFFB2289;
   static const int subTextColor = 0xFF959595;
   static const int hintTextColor = 0xFFD0D0D0;
   static const int subLightTextColor = 0xffc4c4c4;
