@@ -7,6 +7,7 @@ import 'package:flutter_module/common/utils/flutter_screenutils.dart';
 import 'package:flutter_module/common/http.dart' as http;
 
 import 'base_page.dart';
+import 'page_metu_list.dart';
 
 class HotelListPage extends StatefulWidget {
   static const String sName = "hotel_list_page";
@@ -74,11 +75,17 @@ class _HotelListPageState extends State<HotelListPage> {
         elevation: 0,
       ),
       body: Container(
-        padding: EdgeInsets.only(top: 15, left: 20, right: 20,bottom: 15),
         child: OrientationBuilder(
           builder: (context, orientation) {
             return GridView.builder(
-              gridDelegate: HotelGridDelegate(orientation),
+              padding:
+                  EdgeInsets.only(top: 15, left: 20, right: 20, bottom: 15),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: orientation == Orientation.landscape ? 3 : 2,
+                  mainAxisSpacing: 17.5,
+                  crossAxisSpacing: 17.5),
+
+//              gridDelegate: HotelGridDelegate(orientation),
               itemBuilder: (context, index) {
                 return buildHotelItem(_hotelList[index]);
               },
@@ -92,94 +99,89 @@ class _HotelListPageState extends State<HotelListPage> {
   }
 
   Widget buildHotelItem(HotelBean hotel) {
-    return Material(
-      type: MaterialType.card,
-//      shape: RoundedRectangleBorder(
-//        borderRadius: BorderRadius.circular(10),
-//      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (context) => MeituListPage(),
+        ));
+      },
+      child: Card(
+        elevation: 15,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
-          boxShadow: [
-            BoxShadow(color: Colors.black26, offset: Offset(1.5, 1.5))
-          ],
         ),
-        child: Column(
-          children: <Widget>[
-            Flexible(
-              flex: 391,
-              child: ConstrainedBox(
-                constraints: BoxConstraints.expand(),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(10),
-                    topRight: Radius.circular(10),
-                  ),
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          child: Column(
+            children: <Widget>[
+              Flexible(
+                flex: 391,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints.expand(),
                   child: Image.network(
                     hotel.photo,
                     fit: BoxFit.cover,
                   ),
                 ),
               ),
-            ),
-            Flexible(
-              flex: 191,
-              child: Padding(
-                padding: EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Flexible(
-                      child: Text(
-                        hotel.hotelName,
-                        style: kTitleMaxStyle,
-                        textAlign: TextAlign.start,
-                        maxLines: 1,
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: 8),
-                    ),
-                    Flexible(
-                      child: Row(
-                        children: <Widget>[
-                          InkWell(
-                            child: Icon(
-                              Icons.location_on,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                            onTap: () {
-                              ///前往地图
-                            },
-                          ),
-                          Expanded(
-                              child: Text(
-                            hotel.address,
-                            style: kTitleStyle,
-                            maxLines: 1,
-                          )),
-                        ],
-                      ),
-                    ),
-                    Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: Container(),
-                        ),
-                        Text(
-                          "￥${hotel.price}",
-                          style: kTitlePriceStyle,
-                          textAlign: TextAlign.end,
+              Flexible(
+                flex: 191,
+                child: Padding(
+                  padding: EdgeInsets.all(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Flexible(
+                        child: Text(
+                          hotel.hotelName,
+                          style: kTitleMaxStyle,
+                          textAlign: TextAlign.start,
                           maxLines: 1,
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      Padding(
+                        padding: EdgeInsets.only(top: 8),
+                      ),
+                      Flexible(
+                        child: Row(
+                          children: <Widget>[
+                            InkWell(
+                              child: Icon(
+                                Icons.location_on,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                              onTap: () {
+                                ///前往地图
+                              },
+                            ),
+                            Expanded(
+                                child: Text(
+                              hotel.address,
+                              style: kTitleStyle,
+                              maxLines: 1,
+                            )),
+                          ],
+                        ),
+                      ),
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Container(),
+                          ),
+                          Text(
+                            "￥${hotel.price}",
+                            style: kTitlePriceStyle,
+                            textAlign: TextAlign.end,
+                            maxLines: 1,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
