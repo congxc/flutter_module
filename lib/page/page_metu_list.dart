@@ -22,11 +22,14 @@ class _MeituListPageState extends State<MeituListPage> {
   GlobalKey<RefreshIndicatorState> refreshGlobalKey =
       GlobalKey<RefreshIndicatorState>();
 
+  PhotoSizeLookUp _photoSizeLookUp = PhotoSizeLookUp();
+
   ScrollController _scrollController;
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
+    print("--------------initState ");
     _scrollController = ScrollController()
       ..addListener(() {
         if (_scrollController.position.pixels ==
@@ -47,6 +50,7 @@ class _MeituListPageState extends State<MeituListPage> {
 
   @override
   Widget build(BuildContext context) {
+    print("--------------build ");
     return Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -82,7 +86,7 @@ class _MeituListPageState extends State<MeituListPage> {
           crossAxisCount: 3,
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
-          sizeLookup: PhotoSizeLookUp(),
+          sizeLookup: _photoSizeLookUp,
         ),
         itemBuilder: (context, index) {
           if (loadMoreEnable) {
@@ -168,6 +172,7 @@ class _MeituListPageState extends State<MeituListPage> {
     }
     loadMoreEnable = true;
     isRefreshing = true;
+    _photoSizeLookUp.invalidateSpanIndexCache();
     picList?.clear();
     page = 1;
     return await Future.delayed(Duration(milliseconds: 2000), () async {

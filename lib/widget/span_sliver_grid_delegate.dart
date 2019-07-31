@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'dart:math' as math;
 
-DefaultSpanSizeLookup _kDefaultSpanSizeLookup =
-    DefaultSpanSizeLookup(mCacheSpanIndices: false);
-
 class SpanGridDelegateWithFixedCrossAxisCount extends SliverGridDelegate {
   /// Creates a delegate that makes grid layouts with a fixed number of tiles in
   /// the cross axis.
@@ -54,7 +51,7 @@ class SpanGridDelegateWithFixedCrossAxisCount extends SliverGridDelegate {
     final double childCrossAxisExtent = usableCrossAxisExtent / crossAxisCount;
     final double childMainAxisExtent = childCrossAxisExtent / childAspectRatio;
     return SpanSliverGridLayout(
-      sizeLookup: sizeLookup ?? _kDefaultSpanSizeLookup,
+      sizeLookup: sizeLookup,
       crossAxisCount: crossAxisCount,
       mainAxisStride: childMainAxisExtent + mainAxisSpacing,
       crossAxisStride: childCrossAxisExtent + crossAxisSpacing,
@@ -125,29 +122,17 @@ class SpanSliverGridLayout extends SliverGridLayout {
   /// the [SliverConstraints.crossAxisDirection].
   final bool reverseCrossAxis;
 
-  int getStartPositionForScrollOffset(double scrollOffset) {
-    int rowIndex = (scrollOffset ~/ mainAxisStride);
-    int startPosition = 0;
-    for (int i = 0; true; i++) {
-      int index = sizeLookup.getSpanGroupIndex(i, crossAxisCount);
-      if (index == rowIndex) {
-        startPosition = i;
-        break;
-      }
-    }
-    return startPosition;
-  }
-
   @override
   int getMinChildIndexForScrollOffset(double scrollOffset) {
     if (mainAxisStride <= 0.0) {
       return 0;
     }
     int min = crossAxisCount * (scrollOffset ~/ mainAxisStride);
-    if (sizeLookup == null || sizeLookup == _kDefaultSpanSizeLookup) {
+    if (sizeLookup == null || sizeLookup is DefaultSpanSizeLookup) {
       return min;
     }
-    min = getStartPositionForScrollOffset(scrollOffset);
+    int rowIndex = (scrollOffset ~/ mainAxisStride);
+    min = sizeLookup.getMinPositionForRowIndex(rowIndex, crossAxisCount);
     return min;
   }
 
@@ -159,26 +144,11 @@ class SpanSliverGridLayout extends SliverGridLayout {
     }
     final int mainAxisCount = (scrollOffset / mainAxisStride).ceil();
     int max = math.max(0, crossAxisCount * mainAxisCount - 1);
-    if (sizeLookup == null || sizeLookup == _kDefaultSpanSizeLookup) {
+    if (sizeLookup == null || sizeLookup is DefaultSpanSizeLookup) {
       return max;
     }
-    int startPosition = getStartPositionForScrollOffset(scrollOffset);
-    if (crossAxisCount <= 1 ||
-        crossAxisCount == sizeLookup.getSpanSize(startPosition)) {
-      return startPosition;
-    }
-    int span = 0;
-    for (int i = 0; i < crossAxisCount - 1; i++) {
-      // i < 2  0, 1
-      int size = sizeLookup.getSpanSize(startPosition + i);
-      span += size; //3
-      if (span == crossAxisCount) {
-        span = span - size;
-      } else if (span > crossAxisCount) {
-        span = 0;
-      }
-    }
-    max = startPosition + span;
+    int rowIndex = scrollOffset ~/ mainAxisStride;
+    max = sizeLookup.getMaxPositionForRowIndex(rowIndex, crossAxisCount);
     return max;
   }
 
@@ -198,13 +168,13 @@ class SpanSliverGridLayout extends SliverGridLayout {
     int row;
     int spanIndex = 0;
     double childCrossAxisWidth;
-    if (sizeLookup == null || sizeLookup == _kDefaultSpanSizeLookup) {
+    if (sizeLookup == null || sizeLookup is DefaultSpanSizeLookup) {
       row = index ~/ crossAxisCount;
       spanIndex = index % crossAxisCount;
       childCrossAxisWidth = childCrossAxisExtent;
     } else {
       row = sizeLookup.getSpanGroupIndex(index, crossAxisCount);
-      spanIndex = sizeLookup.getSpanIndex(index, crossAxisCount);
+      spanIndex = sizeLookup.getCachedSpanIndex(index, crossAxisCount);
       childCrossAxisWidth =
           childCrossAxisExtent * sizeLookup.getSpanSize(index) +
               (sizeLookup.getSpanSize(index) - 1) *
@@ -225,7 +195,7 @@ class SpanSliverGridLayout extends SliverGridLayout {
   double computeMaxScrollOffset(int childCount) {
     assert(childCount != null);
     int mainAxisCount;
-    if (sizeLookup == null || sizeLookup == _kDefaultSpanSizeLookup) {
+    if (sizeLookup == null || sizeLookup is DefaultSpanSizeLookup) {
       mainAxisCount = ((childCount - 1) ~/ crossAxisCount) + 1; //行数
     } else {
       mainAxisCount =
@@ -239,13 +209,14 @@ class SpanSliverGridLayout extends SliverGridLayout {
 }
 
 abstract class SpanSizeLookup {
-  final SparseIntArray mSpanIndexCache;
+  SparseIntArray mSpanIndexCache;
 
   bool mCacheSpanIndices;
 
-  SpanSizeLookup({
-    this.mCacheSpanIndices = false,
-  }) : mSpanIndexCache = SparseIntArray()..init(10);
+  SpanSizeLookup({this.mCacheSpanIndices = true}) {
+    mSpanIndexCache = SparseIntArray()..init(10);
+    print("constructor SpanSizeLookup");
+  }
   //返回position占用空间， 返回1=占用一列 ，返回3等于占用3列
   int getSpanSize(int position);
 
@@ -254,7 +225,9 @@ abstract class SpanSizeLookup {
   }
 
   void invalidateSpanIndexCache() {
+    print("invalidateSpanIndexCache SpanSizeLookup");
     this.mSpanIndexCache.clear();
+    this.mSpanIndexCache.init(10);
   }
 
   bool get isSpanIndexCacheEnabled {
@@ -362,6 +335,40 @@ abstract class SpanSizeLookup {
 
     return group;
   }
+
+  //所在行数的最小position
+  int getMinPositionForRowIndex(int rowIndex, int spanCount) {
+    int minPosition = 0;
+    for (int i = 0; true; i++) {
+      int index = getSpanGroupIndex(i, spanCount);
+      if (index == rowIndex) {
+        minPosition = i;
+        break;
+      }
+    }
+    return minPosition;
+  }
+
+  //所在行数的最大position
+  int getMaxPositionForRowIndex(int rowIndex, int spanCount) {
+    int minPosition = getMinPositionForRowIndex(rowIndex, spanCount);
+    if (spanCount <= 1 || spanCount == getSpanSize(minPosition)) {
+      return minPosition;
+    }
+    int span = 0;
+    for (int i = 0; i < spanCount - 1; i++) {
+      // i < 2  0, 1
+      int size = getSpanSize(minPosition + i);
+      span += size; //3
+      if (span == spanCount) {
+        span = span - size;
+      } else if (span > spanCount) {
+        span = 0;
+      }
+    }
+    int maxPosition = minPosition + span;
+    return maxPosition;
+  }
 }
 
 class DefaultSpanSizeLookup extends SpanSizeLookup {
@@ -384,9 +391,12 @@ class SparseIntArray {
   List<int> mKeys;
   List<int> mValues;
   int mSize;
-  SparseIntArray();
+  SparseIntArray(){
+    print("constructor SparseIntArray");
+  }
 
   void init(int initialCapacity) {
+    print("init SparseIntArray");
     if (initialCapacity == 0) {
       mKeys = [];
       mValues = [];
@@ -400,24 +410,28 @@ class SparseIntArray {
 
   void clear() {
     mSize = 0;
+    mKeys = new List();
+    mValues = new List();
   }
 
   void put(int key, int value) {
+    print("----------------------put SparseIntArray");
     int i = binarySearch(mKeys, mSize, key);
     if (i >= 0) {
       mValues[i] = value;
     } else {
       i = ~i;
-      //print(" i = $i");
+      print("--------- i = $i");
       mKeys = insert(mKeys, mSize, i, key);
+      print("--------- keys = $mKeys");
       mValues = insert(mValues, mSize, i, value);
       mSize++;
     }
   }
 
   int get(int key, int valueIfKeyNotFound) {
+   // print("----------------------get SparseIntArray");
     int i = binarySearch(mKeys, mSize, key);
-
     if (i < 0) {
       return valueIfKeyNotFound;
     } else {
@@ -450,18 +464,20 @@ int binarySearch(List<int> array, int size, int value) {
       return mid; // value found
     }
   }
+  int position = ~lo;
+  print("binarySearch = position = $position");
   return ~lo; // value not present
 }
 
 List<int> insert(List<int> array, int currentSize, int index, int element) {
   assert(currentSize <= array.length);
   if (currentSize + 1 <= array.length) {
-    List newArray = List.of(array);
+    List<int> newArray = List<int>.of(array);
     newArray[index] = element;
     return newArray;
   }
 
-  List<int> newArray = new List(currentSize); //实现扩容
+  List<int> newArray = new List<int>(currentSize + 1); //实现扩容
   List.copyRange(newArray, 0, array);
   newArray[index] = element;
   return newArray;
